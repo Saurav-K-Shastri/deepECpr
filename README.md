@@ -1,0 +1,6 @@
+This repository contains the code associated with the paper "Fast and Robust Phase Retrieval via Deep Expectation-Consistent Approximation".
+
+Abstract:
+Accurately recovering images from phaseless measurements is a challenging and long-standing problem.  In this work, we present "deepECpr," which combines expectation-consistent (EC) approximation with deep denoising networks to surpass state-of-the-art phase-retrieval methods in both speed and accuracy.  In addition to applying EC in a non-traditional manner, deepECpr includes a novel stochastic damping scheme that is inspired by recent diffusion methods.  Like existing phase-retrieval methods based on plug-and-play priors, regularization by denoising, or diffusion, deepECpr iterates a denoising stage with a measurement-exploitation stage.  But unlike existing methods, deepECpr requires far fewer denoiser calls.  We compare deepECpr to the state-of-the-art prDeep (Metzler et al., 2018), Deep-ITA (Wang et al., 2020), and Diffusion Posterior Sampling (Chung et al., 2023) methods for noisy phase-retrieval of color, natural, and unnatural grayscale images on oversampled-Fourier and coded-diffraction-pattern measurements and find improvements in both PSNR and SSIM with 5x fewer denoiser calls. 
+
+The code will be uploaded soon.
