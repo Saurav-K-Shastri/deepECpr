@@ -8,7 +8,7 @@ Accurately recovering images from phaseless measurements is a challenging and lo
 
 Please download the data and the pre-trained denoisers required for the demo here: https://drive.google.com/drive/folders/1XZOdsoeFcgCZiCaHom7hcylPK-qRhnpv?usp=sharing
 
-To make sure that the versions of the packages match those we tested the code with, we recommend creating a new virtual environment and installing packages using `conda` with the following command.
+To make sure that the versions of the packages match those we tested the code with, we recommend creating a new virtual environment and installing packages using `conda` with the following command:
 
 ```bash
 conda env create -f environment.yml
