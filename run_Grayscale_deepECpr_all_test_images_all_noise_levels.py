@@ -59,164 +59,88 @@ def main():
     ########## Run for natural test images ##########
     #################################################
 
-    image_type = "natural"
+    for image_type in ["natural", "unnatural"]:
 
-    PSNR_all_images = np.zeros((6,3))
-    SSIM_all_images = np.zeros((6,3))
-
-    # save PSNR and SSIM in args.save_dir
-    save_dir = args.save_dir
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    # add measurement type to the save file name
-    save_file_natural = os.path.join(save_dir, f"PSNR_SSIM_{measurement_type}_all_Grayscale_natural_test_images_all_noise_levels.npz")
-
-    print("=============================================================================================")
-    print("==============Running deepECpr on all natural test images and noise levels===================")
-    print("=============================================================================================")
-    print(" ")
-    print("Measurement Type  : ", measurement_type)
-    for alpha in alpha_list:
         print(" ")
-        print("alpha: ", alpha)
-        if measurement_type == "OSF":
-            alpha_count = {4: 0, 6: 1}.get(alpha, 2)
-        else:
-            alpha_count = {5: 0, 15: 1}.get(alpha, 2)
-
-        for image_number in range(6):
-
-            print("Image number: ", image_number)
-
-            best_alg_run_error = np.inf
-
-            for alg_run in range(num_alg_runs):
-
-                y, sig, x0, z0, CDP_rand_mat = get_grayscale_measurement(image_number, image_type, measurement_type, alpha, data_config_location, verbose = False)
-
-                if measurement_type == "OSF":
-                    x_hat_init = torch.zeros_like(x0)
-                    x_hat_init[0,0,:,:] = torch.from_numpy(HIO_alg_natural_init[image_number,alg_run,alpha_count,:,:])
-                    deepECpr_recon, residual_error = run_deepECpr_grayscale_OSF(y, sig, x0, z0, model_config_location, damp_bar1, damp_bar2, EM_iteration_stop, total_iterations, std_input, linear_tune_list, x_hat_init = x_hat_init, fixed_CDP_rand_mat=CDP_rand_mat, measurement_type = measurement_type , verbose = False, my_device=my_device)
-                elif measurement_type == "CDP":
-                    x_hat_init = torch.zeros_like(x0) # dummy # actual initialization for CDP case is done side the 'run_deepECpr' function
-                    deepECpr_recon, residual_error = run_deepECpr_grayscale_CDP(y, sig, x0, z0, model_config_location, damp_bar1, damp_bar2, EM_iteration_stop, total_iterations, std_input, linear_tune_list, x_hat_init = x_hat_init, fixed_CDP_rand_mat=CDP_rand_mat, measurement_type = measurement_type , verbose = False, my_device=my_device)
-                else:
-                    raise ValueError("Invalid measurement type")
-                # Run deepECpr  
-
-                if residual_error < best_alg_run_error:
-                    best_alg_run_error = residual_error
-                    best_alg_run_recon = deepECpr_recon
-
-            recon_img = best_alg_run_recon[0,0,:,:].contiguous().cpu().numpy()/255
-            GT_img = x0[0,0,:,:].contiguous().cpu().numpy()/255
-            
-            SSIM_all_images[image_number,alpha_count] = ssim(GT_img, recon_img, maxval = 1.0)
-            PSNR_all_images[image_number,alpha_count] = compute_psnr(GT_img, recon_img)
-
-            np.savez(save_file_natural, PSNR_all_images = PSNR_all_images, SSIM_all_images = SSIM_all_images)
-
-    print(" ")    
-    print("=====================================================================")
-    print("==============Average PSNR and SSIM for all test images==============")
-    print("=====================================================================")
-    print(" ")
-    print(" Image type: ", image_type)
-    print(" ")
-    for alpha in alpha_list:
-        if measurement_type == "OSF":
-            alpha_count = {4: 0, 6: 1}.get(alpha, 2)
-        else:
-            alpha_count = {5: 0, 15: 1}.get(alpha, 2)
-        print(f"Alpha: {alpha}")
-        print("Avg PSNR: ", np.round(np.mean(PSNR_all_images[:,alpha_count]),2))
-        print("Avg SSIM: ", np.round(np.mean(SSIM_all_images[:,alpha_count]),4))
+        print(" Image type: ", image_type)
         print(" ")
-    print("=====================================================================")
-    print("=====================================================================")
 
-    #################################################
-    ########## Run for natural test images ##########
-    #################################################
+        PSNR_all_images = np.zeros((6,3))
+        SSIM_all_images = np.zeros((6,3))
 
-    image_type = "unnatural"
+        # save PSNR and SSIM in args.save_dir
+        save_dir = args.save_dir
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        # add measurement type to the save file name
+        save_file = os.path.join(save_dir, f"PSNR_SSIM_{measurement_type}_all_Grayscale_{image_type}_test_images_all_noise_levels.npz")
 
-    PSNR_all_images = np.zeros((6,3))
-    SSIM_all_images = np.zeros((6,3))
-
-    # save PSNR and SSIM in args.save_dir
-    save_dir = args.save_dir
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    # add measurement type to the save file name
-    save_file_unnatural = os.path.join(save_dir, f"PSNR_SSIM_{measurement_type}_all_Grayscale_unnatural_test_images_all_noise_levels.npz")
-
-    print("===============================================================================================")
-    print("==============Running deepECpr on all unnatural test images and noise levels===================")
-    print("===============================================================================================")
-    print(" ")
-    print("Measurement Type  : ", measurement_type)
-    for alpha in alpha_list:
+        print("=============================================================================================")
+        print("==============Running deepECpr on all test images and noise levels===================")
+        print("=============================================================================================")
         print(" ")
-        print("alpha: ", alpha)
-        if measurement_type == "OSF":
-            alpha_count = {4: 0, 6: 1}.get(alpha, 2)
-        else:
-            alpha_count = {5: 0, 15: 1}.get(alpha, 2)
+        print("Measurement Type  : ", measurement_type)
+        for alpha in alpha_list:
+            print(" ")
+            print("alpha: ", alpha)
+            if measurement_type == "OSF":
+                alpha_count = {4: 0, 6: 1}.get(alpha, 2)
+            else:
+                alpha_count = {5: 0, 15: 1}.get(alpha, 2)
 
-        for image_number in range(6):
+            for image_number in range(6):
 
-            print("Image number: ", image_number)
+                print("Image number: ", image_number)
 
-            best_alg_run_error = np.inf
+                best_alg_run_error = np.inf
 
-            for alg_run in range(num_alg_runs):
+                for alg_run in range(num_alg_runs):
 
-                y, sig, x0, z0, CDP_rand_mat = get_grayscale_measurement(image_number, image_type, measurement_type, alpha, data_config_location, verbose = False)
+                    y, sig, x0, z0, CDP_rand_mat = get_grayscale_measurement(image_number, image_type, measurement_type, alpha, data_config_location, verbose = False)
 
-                if measurement_type == "OSF":
-                    x_hat_init = torch.zeros_like(x0)
-                    x_hat_init[0,0,:,:] = torch.from_numpy(HIO_alg_unnatural_init[image_number,alg_run,alpha_count,:,:])
-                    deepECpr_recon, residual_error = run_deepECpr_grayscale_OSF(y, sig, x0, z0, model_config_location, damp_bar1, damp_bar2, EM_iteration_stop, total_iterations, std_input, linear_tune_list, x_hat_init = x_hat_init, fixed_CDP_rand_mat=CDP_rand_mat, measurement_type = measurement_type , verbose = False, my_device=my_device)
-                elif measurement_type == "CDP":
-                    x_hat_init = torch.zeros_like(x0) # dummy # actual initialization for CDP case is done side the 'run_deepECpr' function
-                    deepECpr_recon, residual_error = run_deepECpr_grayscale_CDP(y, sig, x0, z0, model_config_location, damp_bar1, damp_bar2, EM_iteration_stop, total_iterations, std_input, linear_tune_list, x_hat_init = x_hat_init, fixed_CDP_rand_mat=CDP_rand_mat, measurement_type = measurement_type , verbose = False, my_device=my_device)
-                else:
-                    raise ValueError("Invalid measurement type")
-                # Run deepECpr  
+                    if measurement_type == "OSF":
+                        x_hat_init = torch.zeros_like(x0)
+                        if image_type == "natural":
+                            x_hat_init[0,0,:,:] = torch.from_numpy(HIO_alg_natural_init[image_number,alg_run,alpha_count,:,:])
+                        else:
+                            x_hat_init[0,0,:,:] = torch.from_numpy(HIO_alg_unnatural_init[image_number,alg_run,alpha_count,:,:])
+                    
+                        deepECpr_recon, residual_error = run_deepECpr_grayscale_OSF(y, sig, x0, z0, model_config_location, damp_bar1, damp_bar2, EM_iteration_stop, total_iterations, std_input, linear_tune_list, x_hat_init = x_hat_init, fixed_CDP_rand_mat=CDP_rand_mat, measurement_type = measurement_type , verbose = False, my_device=my_device)
+                    elif measurement_type == "CDP":
+                        x_hat_init = torch.zeros_like(x0) # dummy # actual initialization for CDP case is done side the 'run_deepECpr' function
+                        deepECpr_recon, residual_error = run_deepECpr_grayscale_CDP(y, sig, x0, z0, model_config_location, damp_bar1, damp_bar2, EM_iteration_stop, total_iterations, std_input, linear_tune_list, x_hat_init = x_hat_init, fixed_CDP_rand_mat=CDP_rand_mat, measurement_type = measurement_type , verbose = False, my_device=my_device)
+                    else:
+                        raise ValueError("Invalid measurement type")
+                    # Run deepECpr  
 
-                if residual_error < best_alg_run_error:
-                    best_alg_run_error = residual_error
-                    best_alg_run_recon = deepECpr_recon
+                    if residual_error < best_alg_run_error:
+                        best_alg_run_error = residual_error
+                        best_alg_run_recon = deepECpr_recon
 
-            recon_img = best_alg_run_recon[0,0,:,:].contiguous().cpu().numpy()/255
-            GT_img = x0[0,0,:,:].contiguous().cpu().numpy()/255
-            
-            SSIM_all_images[image_number,alpha_count] = ssim(GT_img, recon_img, maxval = 1.0)
-            PSNR_all_images[image_number,alpha_count] = compute_psnr(GT_img, recon_img)
+                recon_img = best_alg_run_recon[0,0,:,:].contiguous().cpu().numpy()/255
+                GT_img = x0[0,0,:,:].contiguous().cpu().numpy()/255
+                
+                SSIM_all_images[image_number,alpha_count] = ssim(GT_img, recon_img, maxval = 1.0)
+                PSNR_all_images[image_number,alpha_count] = compute_psnr(GT_img, recon_img)
 
-            np.savez(save_file_unnatural, PSNR_all_images = PSNR_all_images, SSIM_all_images = SSIM_all_images)
+                np.savez(save_file, PSNR_all_images = PSNR_all_images, SSIM_all_images = SSIM_all_images)
 
-    print(" ")    
-    print("=====================================================================")
-    print("==============Average PSNR and SSIM for all test images==============")
-    print("=====================================================================")
-    print(" ")
-    print(" Image type: ", image_type)
-    print(" ")
-    for alpha in alpha_list:
-        if measurement_type == "OSF":
-            alpha_count = {4: 0, 6: 1}.get(alpha, 2)
-        else:
-            alpha_count = {5: 0, 15: 1}.get(alpha, 2)
-        print(f"Alpha: {alpha}")
-        print("Avg PSNR: ", np.round(np.mean(PSNR_all_images[:,alpha_count]),2))
-        print("Avg SSIM: ", np.round(np.mean(SSIM_all_images[:,alpha_count]),4))
+        print(" ")    
+        print("=====================================================================")
+        print("==============Average PSNR and SSIM for all test images==============")
+        print("=====================================================================")
         print(" ")
-    print("=====================================================================")
-    print("=====================================================================")
-
+        for alpha in alpha_list:
+            if measurement_type == "OSF":
+                alpha_count = {4: 0, 6: 1}.get(alpha, 2)
+            else:
+                alpha_count = {5: 0, 15: 1}.get(alpha, 2)
+            print(f"Alpha: {alpha}")
+            print("Avg PSNR: ", np.round(np.mean(PSNR_all_images[:,alpha_count]),2))
+            print("Avg SSIM: ", np.round(np.mean(SSIM_all_images[:,alpha_count]),4))
+            print(" ")
+        print("=====================================================================")
+        print("=====================================================================")
 
 
 if __name__ == '__main__':
