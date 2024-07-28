@@ -1,0 +1,11 @@
+# Defaults for image training.
+
+measurement_type: OSF
+damp_bar1: 0.3
+damp_bar2: 0.075
+EM_iteration_stop: 3
+total_iterations: 200
+linear_tune: 0.15
+
+pre_run_HIO_file_path: /local/storage/deepECpr_gitHub_data_files/HIO_pre_run/FFHQ_OSF_HIO_pre_run.npz # HIO was pre-run on the data following the procedure mentioned in the paper and the results were saved in a file
+

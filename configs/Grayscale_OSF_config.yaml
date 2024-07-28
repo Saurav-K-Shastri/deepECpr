@@ -1,0 +1,16 @@
+# Defaults for image training.
+
+measurement_type: OSF
+damp_bar1: 0.3
+damp_bar2: 0.075
+EM_iteration_stop: 10
+total_iterations: 400
+linear_tune_list:
+  - 0.45
+  - 0.35
+  - 0.25
+  - 0.20
+
+pre_run_natural_HIO_file_path: /local/storage/deepECpr_gitHub_data_files/HIO_pre_run/Grayscale_Natural_OSF_HIO_pre_run.npz # HIO was pre-run on the data following the procedure mentioned in the paper and the results were saved in a file
+pre_run_unnatural_HIO_file_path: /local/storage/deepECpr_gitHub_data_files/HIO_pre_run/Grayscale_Unnatural_OSF_HIO_pre_run.npz # HIO was pre-run on the data following the procedure mentioned in the paper and the results were saved in a file
+

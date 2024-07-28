@@ -1,0 +1,12 @@
+# Defaults for image training.
+
+measurement_type: CDP
+damp_bar1: 0.3
+damp_bar2: 0.075
+EM_iteration_stop: 10
+total_iterations: 200
+linear_tune_list:
+  - 0.045
+  - 0.035
+  - 0.025
+  - 0.020

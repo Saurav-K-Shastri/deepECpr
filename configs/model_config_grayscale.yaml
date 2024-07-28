@@ -1,0 +1,3 @@
+# Defaults for image training.
+
+model_path: /local/storage/deepECpr_gitHub_data_files/BF_DnCNN_models/
