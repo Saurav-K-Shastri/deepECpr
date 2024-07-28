@@ -130,6 +130,8 @@ def main():
         print("==============Average PSNR and SSIM for all test images==============")
         print("=====================================================================")
         print(" ")
+        print(" Image type: ", image_type)
+        print(" ")
         for alpha in alpha_list:
             if measurement_type == "OSF":
                 alpha_count = {4: 0, 6: 1}.get(alpha, 2)
