@@ -18,6 +18,7 @@ from fastmri_utils2.math import (
     complex_mul,
     tensor_to_complex_np,
 )
+from scipy import signal
 
 from models.generator_new import DnCNN_BF 
 
@@ -686,5 +687,120 @@ class prox_PnP_freq_deepECpr_with_EM_grayscale:
         return self.A_op.A(self.Omn_foo.A(x_out)), pred_inp_var_x, pred_op_var_x, divergence_x
     
 
+#############################################
+######### FFHQ Image HIO Functions #########
+#############################################
+class A_op_complex_HIO_OSF:
+    
+    def __init__(self, oversampling_factor, image_size):
+        self.oversampling_factor = oversampling_factor
+        self.image_size = image_size
+        self.n = self.image_size*self.image_size
+        self.m = int(self.n*self.oversampling_factor)
+
+        self.oversampled_image_size = int(np.sqrt(self.m))
+        self.pad = (self.oversampled_image_size - self.image_size)
+        self.pad_left = self.pad//2 
+        self.pad_right = self.pad - self.pad_left 
+
+    def A(self,X):
+        X1 = torch.view_as_real(X.contiguous())
+        out = fft2c(X1)
+        return torch.view_as_complex(out.contiguous())
+
+    def H(self,X):
+        X1 = torch.view_as_real(X.contiguous())
+        out = ifft2c(X1)
+        out[:,:,:,:,:,1] = 0
+        return torch.view_as_complex(out.contiguous())
+    
+
+def get_the_best_HIO_recon(y_complex, A_op_complex_foo, beta_HIO, HIO_iter_trials ,HIO_iter_final,  support, d, m, pad_left, resize_size, number_of_trials = 50, algo_trial_num = 0):
+    
+    resid_best_r = torch.inf
+    resid_best_g = torch.inf
+    resid_best_b = torch.inf
+
+    x_init_best = torch.zeros_like(y_complex)
+
+    for seed_num in range(number_of_trials):
+
+        x_init_i = HIO(y_complex, A_op_complex_foo, beta_HIO, HIO_iter_trials, support, seed_num = int(seed_num + (algo_trial_num*number_of_trials))) 
+        
+        error_resid = torch.abs(y_complex) - torch.abs(A_op_complex_foo.A(x_init_i))
+
+        resid_i_r = torch.norm(error_resid[0,0,0,:,:])
+        resid_i_g = torch.norm(error_resid[0,0,1,:,:])
+        resid_i_b = torch.norm(error_resid[0,0,2,:,:])
+
+        if resid_i_r<resid_best_r:
+            resid_best_r=resid_i_r
+            x_init_best[0,0,0,:,:]=x_init_i[0,0,0,:,:]
+        if resid_i_g<resid_best_g:
+            resid_best_g=resid_i_g
+            x_init_best[0,0,1,:,:]=x_init_i[0,0,1,:,:]
+        if resid_i_b<resid_best_b:
+            resid_best_b=resid_i_b
+            x_init_best[0,0,2,:,:]=x_init_i[0,0,2,:,:]
 
 
+    x_hat_HIO_foo = HIO(y_complex, A_op_complex_foo, beta_HIO, HIO_iter_final, support, x_init = x_init_best)
+    x_hat_HIO = torch.real((x_hat_HIO_foo[0,0,:,pad_left:pad_left+resize_size,pad_left:pad_left+resize_size]))
+
+    x_hat_HIO_new_unflipped = torch.zeros(1,2,3,256,256)
+    x_hat_HIO_new_unflipped[0,0,:,:,:] = x_hat_HIO
+
+    return x_hat_HIO_new_unflipped
+
+def HIO(y, A_op_complex_foo, beta, iters, support, x_init=None, seed_num=0):
+    
+    if x_init is None:
+        torch.manual_seed(seed_num)
+        x = torch.rand(A_op_complex_foo.H(y).shape) + 0*1j
+        inds = (support).bool()
+        x[~inds] = 0
+    else:
+        x = x_init
+
+    # Define projection operator
+    def Pm(x):
+        return A_op_complex_foo.H(y * torch.exp(1j * torch.angle(A_op_complex_foo.A(x))))
+
+    # Main loop
+    for k in range(iters):
+        Pmx = Pm(x)
+        inds = (support * (Pmx.real > 0)).bool()
+
+        x[inds] = Pmx[inds]
+        x[~inds] = x[~inds] - beta * Pmx[~inds]
+
+    inds = (support).bool()
+    x[~inds] = 0
+    
+    return x
+
+def fix_channel_orientation_using_correlation(x_rec_HIO_best):
+    
+    x_rec_HIO_best_orientation_corrected = torch.zeros_like(x_rec_HIO_best)
+
+    HIO_r_channel = x_rec_HIO_best[0,0,0,:,:]
+    HIO_g_channel = x_rec_HIO_best[0,0,1,:,:]
+    HIO_b_channel = x_rec_HIO_best[0,0,2,:,:]
+
+    rg_corr = signal.correlate2d(HIO_r_channel.numpy(), HIO_g_channel.numpy(), mode='valid')
+    rg_corr_flip = signal.correlate2d(HIO_r_channel.numpy(), HIO_g_channel.flip(0).flip(1).numpy(), mode='valid')
+
+    if np.abs(rg_corr_flip) > np.abs(rg_corr):
+        HIO_g_channel = HIO_g_channel.flip(0).flip(1)
+
+    rb_corr = signal.correlate2d(HIO_r_channel.numpy(), HIO_b_channel.numpy(), mode='valid')
+    rb_corr_flip = signal.correlate2d(HIO_r_channel.numpy(), HIO_b_channel.flip(0).flip(1).numpy(), mode='valid')
+
+    if np.abs(rb_corr_flip) > np.abs(rb_corr):
+        HIO_b_channel = HIO_b_channel.flip(0).flip(1)
+    
+    x_rec_HIO_best_orientation_corrected[0,0,0,:,:] = HIO_r_channel
+    x_rec_HIO_best_orientation_corrected[0,0,1,:,:] = HIO_g_channel
+    x_rec_HIO_best_orientation_corrected[0,0,2,:,:] = HIO_b_channel
+
+    return x_rec_HIO_best_orientation_corrected
